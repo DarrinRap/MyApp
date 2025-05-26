@@ -2,7 +2,6 @@ import os
 import subprocess
 import textwrap
 
-
 def scaffold_project(
     project_name,
     description,
@@ -93,6 +92,8 @@ def scaffold_project(
         f.write(f"# {project_name}\n")
         f.write(f"{description}\n\n")
         f.write(f"Created by {author}\n\n")
+        if include_ci:
+            f.write(f"![CI](https://github.com/{author}/{project_name}/actions/workflows/ci.yml/badge.svg)\n\n")
         f.write("## Quick Start\n")
         f.write(textwrap.dedent(f"""
             ```bash
@@ -141,7 +142,7 @@ def scaffold_project(
         os.makedirs(tests_dir, exist_ok=True)
         test_file = os.path.join(tests_dir, 'test_sample.py')
         with open(test_file, 'w') as f:
-            f.write(textwrap.dedent(f"""
+            f.write(textwrap.dedent("""
                 def test_placeholder():
                     assert True  # Replace with real tests
             """))
@@ -181,12 +182,38 @@ def scaffold_project(
                 insert_final_newline = true
             """))
 
-    # 10. Optional: add CI badge to README
+    # 10. Optional: generate GitHub Actions workflow
     if include_ci:
-        with open(readme_path, 'r+') as f:
-            content = f.read()
-            f.seek(0)
-            f.write(f"![CI](https://github.com/{author}/{project_name}/actions/workflows/ci.yml/badge.svg)\n\n" + content)
+        ci_dir = os.path.join(project_dir, '.github', 'workflows')
+        os.makedirs(ci_dir, exist_ok=True)
+        ci_path = os.path.join(ci_dir, 'ci.yml')
+        with open(ci_path, 'w') as f:
+            f.write(textwrap.dedent(f"""
+                name: CI
+
+                on:
+                  push:
+                    branches: [ main ]
+                  pull_request:
+                    branches: [ main ]
+
+                jobs:
+                  test:
+                    runs-on: ubuntu-latest
+                    steps:
+                      - uses: actions/checkout@v3
+                      - name: Set up Python
+                        uses: actions/setup-python@v4
+                        with:
+                          python-version: '3.x'
+                      - name: Install dependencies
+                        run: |
+                          python -m pip install --upgrade pip
+                          pip install -r requirements.txt
+                          pip install pytest
+                      - name: Run tests
+                        run: pytest --maxfail=1 --disable-warnings -q
+            """))
 
     # 11. License file
     if license_type.upper() == 'MIT':
