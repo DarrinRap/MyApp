@@ -41,7 +41,7 @@ Buttons:
 - Start Scaffolding: Generates your project structure and files based on the above settings.
 - Update pip: Upgrades pip itself to the latest version and logs the updated version.
 - Update All Packages: Finds and upgrades any outdated packages, logging current vs. latest versions.
-- Package Executable: Bundles the scaffolded app into a single executable using PyInstaller.
+- Package Executable: Bundles the scaffolded app into a single executable using PyInstaller. 
 
 Use File → New Project to clear all fields and start over at any time.
 '''
@@ -130,7 +130,7 @@ class ScaffoldApp(tk.Tk):
     def _create_actions(self):
         frame = tk.Frame(self)
         frame.pack(pady=10)
-        tk.Button(frame, text="Start Scaffolding", font=(None, 12, 'bold'), command=self._run_scaffold).pack(pady=5)
+        tk.Button(frame, text="Start Scaffolding", font=(None,12,'bold'), command=self._run_scaffold).pack(pady=5)
         tk.Button(frame, text="Update pip", command=self._update_pip).pack(pady=2)
         tk.Button(frame, text="Update All Packages", command=self._update_all).pack(pady=2)
         tk.Button(frame, text="Package Executable", command=self._package_executable).pack(pady=2)
@@ -139,7 +139,7 @@ class ScaffoldApp(tk.Tk):
         global log_pane
         log_pane = ScrolledText(self, state='disabled', height=10)
         log_pane.pack(fill='both', expand=True, padx=15, pady=10)
-        tk.Label(self, text=f"© {AUTHOR}", font=(None, 8, 'italic'), fg='gray').pack(side='bottom', pady=5)
+        tk.Label(self, text=f"© {AUTHOR}", font=(None,8,'italic'), fg='gray').pack(side='bottom', pady=5)
 
     def _browse_folder(self, var):
         path = filedialog.askdirectory(title="Select Output Folder")
@@ -160,15 +160,17 @@ class ScaffoldApp(tk.Tk):
         for v in self.options.values():
             v.set(True)
         log_pane.configure(state='normal')
-        log_pane.delete('1.0', 'end')
+        log_pane.delete('1.0','end')
         log_pane.configure(state='disabled')
 
     def _show_about(self):
-        about_text = (f"{APP_TITLE} v{VERSION}\n"
-                      f"Created by {AUTHOR}\n\n"
-                      "Package into EXE with:\n"
-                      "pip install pyinstaller\n"
-                      "pyinstaller --onefile --windowed main.py")
+        about_text = (
+            f"{APP_TITLE} v{VERSION}\n"
+            f"Created by {AUTHOR}\n\n"
+            "Package into EXE with:\n"
+            "pip install pyinstaller\n"
+            "pyinstaller --onefile --windowed main.py"
+        )
         messagebox.showinfo("About", about_text)
 
     def _show_usage(self):
@@ -183,37 +185,37 @@ class ScaffoldApp(tk.Tk):
     def _update_pip(self):
         self._log("Updating pip…")
         try:
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            out = subprocess.check_output([sys.executable, '-m', 'pip', '--version'])
+            subprocess.check_call([sys.executable,'-m','pip','install','--upgrade','pip'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            out = subprocess.check_output([sys.executable,'-m','pip','--version'])
             self._log(out.decode().strip())
-            messagebox.showinfo("Success", "pip has been upgraded.")
+            messagebox.showinfo("Success","pip has been upgraded.")
         except subprocess.CalledProcessError as e:
-            err = e.output.decode(errors='ignore') if hasattr(e, 'output') else str(e)
+            err = e.output.decode(errors='ignore') if hasattr(e,'output') else str(e)
             self._log(f"Error updating pip: {err}")
             messagebox.showerror("Error", err)
 
     def _update_all(self):
         self._log("Checking outdated packages…")
         try:
-            data = subprocess.check_output([sys.executable, '-m', 'pip', 'list', '--outdated', '--format=json'], stderr=subprocess.DEVNULL)
+            data = subprocess.check_output([sys.executable,'-m','pip','list','--outdated','--format=json'], stderr=subprocess.DEVNULL)
             pkgs = json.loads(data)
             if not pkgs:
                 self._log("All packages are up to date.")
-                messagebox.showinfo("Up to date", "All packages are current.")
+                messagebox.showinfo("Up to date","All packages are current.")
                 return
             for pkg in pkgs:
-                name, curr, latest = pkg['name'], pkg['version'], pkg['latest_version']
+                name,curr,latest = pkg['name'],pkg['version'],pkg['latest_version']
                 self._log(f"Upgrading {name}: {curr} → {latest}")
-                subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                info = subprocess.check_output([sys.executable, '-m', 'pip', 'show', name])
+                subprocess.check_call([sys.executable,'-m','pip','install','--upgrade',name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                info = subprocess.check_output([sys.executable,'-m','pip','show',name])
                 for line in info.decode().splitlines():
                     if line.startswith("Version:"):
                         new_ver = line.split(": ")[1]
                         self._log(f"{name} now at version {new_ver}")
                         break
-            messagebox.showinfo("Success", "All packages have been upgraded.")
+            messagebox.showinfo("Success","All packages have been upgraded.")
         except subprocess.CalledProcessError as e:
-            err = e.output.decode(errors='ignore') if hasattr(e, 'output') else str(e)
+            err = e.output.decode(errors='ignore') if hasattr(e,'output') else str(e)
             self._log(f"Error upgrading packages: {err}")
             messagebox.showerror("Error", err)
 
@@ -225,7 +227,7 @@ class ScaffoldApp(tk.Tk):
             self.last_path = folder
         project_dir = self.last_path
 
-        entry_script = os.path.join(project_dir, 'main.py')
+        entry_script = os.path.join(project_dir,'main.py')
         if not os.path.isfile(entry_script):
             entry_script = filedialog.askopenfilename(title="Locate entry script", initialdir=project_dir, filetypes=[("Python files","*.py")])
             if not entry_script:
@@ -233,43 +235,44 @@ class ScaffoldApp(tk.Tk):
 
         self._log("Ensuring PyInstaller is installed…")
         try:
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pyinstaller'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.check_call([sys.executable,'-m','pip','install','--upgrade','pyinstaller'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except subprocess.CalledProcessError as e:
             self._log(f"Error installing PyInstaller: {e}")
-            messagebox.showerror("Error", str(e))
+            messagebox.showerror("Error",str(e))
             return
 
         self._log("Installing compatible pefile version…")
         try:
-            subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pefile!=2024.8.26,>=2022.5.30'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.check_call([sys.executable,'-m','pip','install','--upgrade','pefile!=2024.8.26,>=2022.5.30'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except subprocess.CalledProcessError as e:
             self._log(f"Error installing pefile: {e}")
-            messagebox.showerror("Error", str(e))
+            messagebox.showerror("Error",str(e))
             return
 
         self._log("Packaging executable in real time…")
         try:
-            proc = subprocess.Popen([sys.executable, '-m', 'PyInstaller', '--onefile', '--windowed', entry_script], cwd=project_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            proc = subprocess.Popen([sys.executable,'-m','PyInstaller','--onefile','--windowed',entry_script], cwd=project_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             for line in proc.stdout:
                 self._log(line.rstrip())
             proc.wait()
             if proc.returncode == 0:
                 self._log("Packaging completed successfully.")
-                messagebox.showinfo("Packaged", "Executable has been created.")
+                messagebox.showinfo("Packaged","Executable has been created.")
             else:
                 self._log(f"Packaging failed with exit code {proc.returncode}.")
-                messagebox.showerror("Packaging Error", f"Exit code {proc.returncode}")
+                messagebox.showerror("Packaging Error",f"Exit code {proc.returncode}")
         except Exception as e:
             self._log(f"Packaging error: {e}")
-            messagebox.showerror("Error", str(e))
+            messagebox.showerror("Error",str(e))
 
     def _run_scaffold(self):
         name = self.project_name.get().strip()
         if not name:
-            messagebox.showwarning("Input Required", "Please enter a project name.")
+            messagebox.showwarning("Input Required","Please enter a project name.")
             return
         self._log(f"Scaffolding '{name}'…")
         try:
+            # Scaffold project
             path = scaffold_project(
                 project_name=name,
                 description=f"A Python desktop app named {name}",
@@ -287,11 +290,20 @@ class ScaffoldApp(tk.Tk):
             )
             self.last_path = path
             self._log(f"Project created at: {path}")
-            messagebox.showinfo("Done", f"Project scaffolded:\n{path}")
+            # Create virtual environment
+            venv_dir = os.path.join(path,'venv')
+            self._log("Creating virtual environment…")
+            subprocess.check_call([sys.executable,'-m','venv',venv_dir])
+            self._log(f"Virtual environment created at: {venv_dir}")
+            # Offer terminal
+            if messagebox.askyesno("Open Terminal","Open PowerShell with venv activated?"):
+                cmd=["powershell","-NoExit","-Command",f"Set-Location -LiteralPath '{path}'; .\\venv\\Scripts\\Activate.ps1"]
+                subprocess.Popen(cmd)
+            messagebox.showinfo("Done", f"Project scaffolded at:\n{path}\n\nVirtual environment created at:\n{venv_dir}")
         except Exception as e:
             self._log(f"Error: {e}")
-            messagebox.showerror("Scaffolding Error", str(e))
+            messagebox.showerror("Scaffolding Error",str(e))
 
 if __name__ == '__main__':
-    app = ScaffoldApp()
+    app=ScaffoldApp()
     app.mainloop()
