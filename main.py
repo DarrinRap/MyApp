@@ -1,13 +1,23 @@
-import sys
 import tkinter as tk
+from tkinter import messagebox
+
+def on_click():
+    messagebox.showinfo("Clicked!", "You pressed the button!")
 
 def main():
+    # Create the main window
     app = tk.Tk()
-    app.title('Hello, Tkinter!')
-    app.geometry('300x100')
-    tk.Label(app, text='Hello, Tkinter!').pack(pady=20)
-    app.mainloop()
-    sys.exit(app.exec_() if hasattr(app, 'exec_') else 0)
+    app.title("My First App")
+    app.geometry("400x200")
 
-if __name__ == '__main__':
+    # A welcome label
+    tk.Label(app, text="Welcome to MyApp!", font=("Helvetica", 14)).pack(pady=10)
+
+    # A button that shows a message box when clicked
+    tk.Button(app, text="Press Me", command=on_click).pack(pady=10)
+
+    # Start the event loop
+    app.mainloop()
+
+if __name__ == "__main__":
     main()
