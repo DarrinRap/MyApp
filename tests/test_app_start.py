@@ -1,15 +1,15 @@
 import os
 import sys
+import pytest
 
-# Make sure the project root (where main.py lives) is on sys.path
+# Ensure project root is on sys.path for imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-import pytest
 from main import ScaffoldApp
 
 @pytest.fixture(autouse=True)
 def no_gui_display(monkeypatch):
-    # Prevent actual window pops in CI
+    # Prevent actual window from opening in CI
     monkeypatch.setenv('DISPLAY', ':0')
     yield
 
