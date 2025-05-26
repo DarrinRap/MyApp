@@ -2,6 +2,7 @@ import os
 import subprocess
 import textwrap
 
+
 def scaffold_project(
     project_name,
     description,
@@ -30,7 +31,63 @@ def scaffold_project(
     os.makedirs(pkg_dir, exist_ok=True)
     open(os.path.join(pkg_dir, '__init__.py'), 'w').close()
 
-    # 2. Generate README.md
+    # 2. Generate main.py stub
+    main_path = os.path.join(project_dir, 'main.py')
+    with open(main_path, 'w') as f:
+        if gui_lib == 'tkinter':
+            f.write(textwrap.dedent(f"""
+                import tkinter as tk
+
+                def main():
+                    root = tk.Tk()
+                    root.title("{project_name}")
+                    label = tk.Label(root, text="Welcome to {project_name}!")
+                    label.pack(padx=20, pady=20)
+                    root.mainloop()
+
+                if __name__ == '__main__':
+                    main()
+            """))
+        elif gui_lib == 'pyqt5':
+            f.write(textwrap.dedent(f"""
+                from PyQt5.QtWidgets import QApplication, QLabel, QWidget, QVBoxLayout
+                import sys
+
+                def main():
+                    app = QApplication(sys.argv)
+                    window = QWidget()
+                    window.setWindowTitle("{project_name}")
+                    layout = QVBoxLayout()
+                    label = QLabel("Welcome to {project_name}!")
+                    layout.addWidget(label)
+                    window.setLayout(layout)
+                    window.show()
+                    sys.exit(app.exec_())
+
+                if __name__ == '__main__':
+                    main()
+            """))
+        else:  # pyqt6
+            f.write(textwrap.dedent(f"""
+                from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QVBoxLayout
+                import sys
+
+                def main():
+                    app = QApplication(sys.argv)
+                    window = QWidget()
+                    window.setWindowTitle("{project_name}")
+                    layout = QVBoxLayout()
+                    label = QLabel("Welcome to {project_name}!")
+                    layout.addWidget(label)
+                    window.setLayout(layout)
+                    window.show()
+                    sys.exit(app.exec())
+
+                if __name__ == '__main__':
+                    main()
+            """))
+
+    # 3. Generate README.md
     readme_path = os.path.join(project_dir, 'README.md')
     with open(readme_path, 'w') as f:
         f.write(f"# {project_name}\n")
@@ -41,13 +98,14 @@ def scaffold_project(
             ```bash
             cd {project_name}
             python -m venv venv
-            source venv/bin/activate  # or .\\venv\\Scripts\\activate on Windows
+            # Windows: .\\venv\\Scripts\\activate
+            source venv/bin/activate
             pip install -r requirements.txt
             python main.py
             ```
         """))
 
-    # 3. Generate .gitignore
+    # 4. Generate .gitignore
     gitignore_path = os.path.join(project_dir, '.gitignore')
     gitignore_contents = textwrap.dedent("""
         # Byte-compiled / optimized / DLL files
@@ -72,15 +130,90 @@ def scaffold_project(
     with open(gitignore_path, 'w') as f:
         f.write(gitignore_contents)
 
-    # 4. Create requirements.txt stub
+    # 5. Create requirements.txt stub
     reqs_path = os.path.join(project_dir, 'requirements.txt')
     with open(reqs_path, 'w') as f:
         f.write("# Add your project dependencies here\n")
 
-    # (The rest of your scaffold steps go here: main.py, tests/, CI, docs, pre-commit, editorconfig, license)
-    # For brevity, ensure you integrate your existing scaffold_project logic below.
+    # 6. Optional: include pytest tests
+    if include_tests:
+        tests_dir = os.path.join(project_dir, 'tests')
+        os.makedirs(tests_dir, exist_ok=True)
+        test_file = os.path.join(tests_dir, 'test_sample.py')
+        with open(test_file, 'w') as f:
+            f.write(textwrap.dedent(f"""
+                def test_placeholder():
+                    assert True  # Replace with real tests
+            """))
 
-    # Initialize Git repository
+    # 7. Optional: include docs folder
+    if include_docs:
+        docs_dir = os.path.join(project_dir, 'docs')
+        os.makedirs(docs_dir, exist_ok=True)
+        with open(os.path.join(docs_dir, 'index.md'), 'w') as f:
+            f.write(f"# {project_name} Documentation\n\nWrite your docs here.")
+
+    # 8. Optional: include pre-commit config
+    if include_precommit:
+        precommit_path = os.path.join(project_dir, '.pre-commit-config.yaml')
+        with open(precommit_path, 'w') as f:
+            f.write(textwrap.dedent("""
+                repos:
+                - repo: https://github.com/psf/black
+                  rev: stable
+                  hooks:
+                    - id: black
+            """))
+
+    # 9. Optional: include .editorconfig
+    if include_editorconfig:
+        editor_path = os.path.join(project_dir, '.editorconfig')
+        with open(editor_path, 'w') as f:
+            f.write(textwrap.dedent("""
+                root = true
+
+                [*]
+                indent_style = space
+                indent_size = 4
+                end_of_line = lf
+                charset = utf-8
+                trim_trailing_whitespace = true
+                insert_final_newline = true
+            """))
+
+    # 10. Optional: add CI badge to README
+    if include_ci:
+        with open(readme_path, 'r+') as f:
+            content = f.read()
+            f.seek(0)
+            f.write(f"![CI](https://github.com/{author}/{project_name}/actions/workflows/ci.yml/badge.svg)\n\n" + content)
+
+    # 11. License file
+    if license_type.upper() == 'MIT':
+        year = str(subprocess.check_output(['date', '+%Y']).decode().strip()) if os.name != 'nt' else str(os.popen('echo %date:~-4%').read().strip())
+        with open(os.path.join(project_dir, 'LICENSE'), 'w') as f:
+            f.write(textwrap.dedent(f"""
+                MIT License
+
+                Copyright (c) {year} {author}
+
+                Permission is hereby granted, free of charge, to any person obtaining a copy
+                of this software and associated documentation files (the "Software"), to deal
+                in the Software without restriction, including without limitation the rights
+                to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+                copies of the Software, and to permit persons to whom the Software is
+                furnished to do so, subject to the following conditions:
+
+                THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+                IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+                FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+                AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+                LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+                OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+                SOFTWARE.
+            """))
+
+    # 12. Initialize Git repository
     if use_git:
         subprocess.check_call(['git', 'init'], cwd=project_dir)
         subprocess.check_call(['git', 'add', '.'], cwd=project_dir)
