@@ -1,0 +1,25 @@
+import pytest
+from main import ScaffoldApp
+
+# List of methods your UI should provide callbacks for
+EXPECTED_METHODS = [
+    '_run_scaffold',
+    '_update_pip',
+    '_update_all',
+    '_package_executable',
+    '_open_in_editor',
+    '_clear_form',
+    '_show_usage',
+    '_show_about',
+    '_browse_folder',
+    '_log',
+    '_create_menu',
+    '_create_form',
+    '_create_actions',
+    '_create_log_pane',
+]
+
+def test_scaffoldapp_methods_exist():
+    """Ensure ScaffoldApp defines all expected callback methods."""
+    missing = [m for m in EXPECTED_METHODS if not hasattr(ScaffoldApp, m)]
+    assert not missing, f"Missing methods: {missing}"
