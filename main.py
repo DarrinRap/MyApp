@@ -16,6 +16,33 @@ APP_TITLE = "Python Project Scaffolder"
 VERSION   = "2.0"
 AUTHOR    = "Darrin A. Rapoport"
 
+# Beginner help descriptions
+USAGE_TEXT = '''Welcome to the Python Project Scaffolder!
+
+This tool helps you quickly generate a boilerplate Python desktop app.
+
+Fields:
+- Project Name: Enter the name of your new project.
+- Destination Folder: Choose where to create your project (defaults to current directory).
+- Framework: Choose "tkinter", "pyqt5", or "pyqt6" for the GUI library.
+- License: Select MIT license or None.
+
+Options:
+- Initialize Git repository: Creates a new git repo and makes an initial commit.
+- Include pytest tests: Adds a basic tests/ folder with a placeholder test.
+- Add GitHub Actions CI: Creates a simple CI workflow to run your tests.
+- Create docs folder: Adds a docs/ folder with an index.md stub.
+- Add pre-commit config: Generates a .pre-commit-config.yaml for Black formatting.
+- Add .editorconfig file: Creates an editorconfig for consistent whitespace.
+- Use src/ directory layout: Organizes code under src/<package_name>.
+
+Buttons:
+- Start Scaffolding: Generates your project with the above settings.
+- Update pip: Upgrades pip to the latest version.
+- Update All Packages: Finds and upgrades all outdated pip packages.
+
+Use the File → New Project menu to reset the form at any time.''' 
+
 class ScaffoldApp(tk.Tk):
     """A GUI for scaffolding new Python desktop-app projects."""
     def __init__(self):
@@ -56,21 +83,24 @@ class ScaffoldApp(tk.Tk):
         self.destroy()
 
     def _init_variables(self):
-        self.project_name  = tk.StringVar(value="MyApp")
-        self.output_folder = tk.StringVar()
-        self.gui_lib       = tk.StringVar(value="tkinter")
-        self.license_type  = tk.StringVar(value="MIT")
+        self.project_name    = tk.StringVar(value="MyApp")
+        self.output_folder   = tk.StringVar()
+        self.gui_lib         = tk.StringVar(value="tkinter")
+        self.license_type    = tk.StringVar(value="MIT")
         flags = ['git', 'tests', 'ci', 'docs', 'precommit', 'editor', 'src']
-        self.options = {f: tk.BooleanVar(value=True) for f in flags}
+        self.options = {flag: tk.BooleanVar(value=True) for flag in flags}
 
     def _create_menu(self):
         menubar = tk.Menu(self)
+        # File menu
         file_menu = tk.Menu(menubar, tearoff=False)
         file_menu.add_command(label="New Project", command=self._clear_form)
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self._on_close)
         menubar.add_cascade(label="File", menu=file_menu)
+        # Help menu
         help_menu = tk.Menu(menubar, tearoff=False)
+        help_menu.add_command(label="Usage Guide", command=self._show_usage)
         help_menu.add_command(label="About", command=self._show_about)
         menubar.add_cascade(label="Help", menu=help_menu)
         self.config(menu=menubar)
@@ -79,27 +109,19 @@ class ScaffoldApp(tk.Tk):
         frame = tk.Frame(self)
         frame.pack(fill='x', padx=15, pady=10)
         frame.columnconfigure(1, weight=1)
-
-        # Project name
-        tk.Label(frame, text="Project Name:").grid(row=0, column=0, sticky='w')
+        # Labels
+        rows = ["Project Name:", "Destination Folder:", "Framework:", "License:"]
+        for i, text in enumerate(rows):
+            tk.Label(frame, text=text).grid(row=i, column=0, sticky='w', pady=5)
+        # Inputs
         tk.Entry(frame, textvariable=self.project_name).grid(row=0, column=1, columnspan=2, sticky='ew')
-
-        # Output folder
-        tk.Label(frame, text="Destination Folder:").grid(row=1, column=0, sticky='w', pady=5)
         tk.Entry(frame, textvariable=self.output_folder).grid(row=1, column=1, sticky='ew')
         tk.Button(frame, text="Browse…", command=partial(self._browse_folder, self.output_folder))\
             .grid(row=1, column=2, padx=5)
-
-        # GUI toolkit
-        tk.Label(frame, text="Framework:").grid(row=2, column=0, sticky='w')
         tk.OptionMenu(frame, self.gui_lib, "tkinter", "pyqt5", "pyqt6").grid(row=2, column=1, columnspan=2, sticky='ew')
-
-        # License
-        tk.Label(frame, text="License:").grid(row=3, column=0, sticky='w', pady=5)
         tk.OptionMenu(frame, self.license_type, "MIT", "None").grid(row=3, column=1, columnspan=2, sticky='ew')
-
-        # Features checkboxes
-        features = [
+        # Options
+        opts = [
             ("Initialize Git repository", 'git'),
             ("Include pytest tests", 'tests'),
             ("Add GitHub Actions CI", 'ci'),
@@ -108,17 +130,17 @@ class ScaffoldApp(tk.Tk):
             ("Add .editorconfig file", 'editor'),
             ("Use src/ directory layout", 'src'),
         ]
-        for i, (label, key) in enumerate(features, start=4):
-            tk.Checkbutton(frame, text=label, variable=self.options[key])\
-                .grid(row=i, column=0, columnspan=3, sticky='w')
+        for idx, (lbl, key) in enumerate(opts, start=4):
+            tk.Checkbutton(frame, text=lbl, variable=self.options[key])\
+                .grid(row=idx, column=0, columnspan=3, sticky='w')
 
     def _create_actions(self):
-        act = tk.Frame(self)
-        act.pack(pady=10)
-        tk.Button(act, text="Start Scaffolding", font=(None, 12, 'bold'), command=self._run_scaffold)\
-            .pack(pady=5)
-        tk.Button(act, text="Update pip", command=self._update_pip).pack(pady=2)
-        tk.Button(act, text="Update All Packages", command=self._update_all).pack(pady=2)
+        btn_frame = tk.Frame(self)
+        btn_frame.pack(pady=10)
+        tk.Button(btn_frame, text="Start Scaffolding", font=(None, 12, 'bold'),
+                  command=self._run_scaffold).pack(pady=5)
+        tk.Button(btn_frame, text="Update pip", command=self._update_pip).pack(pady=2)
+        tk.Button(btn_frame, text="Update All Packages", command=self._update_all).pack(pady=2)
 
     def _create_log_pane(self):
         global log_pane
@@ -150,12 +172,22 @@ class ScaffoldApp(tk.Tk):
         log_pane.configure(state='disabled')
 
     def _show_about(self):
-        messagebox.showinfo("About",
+        messagebox.showinfo(
+            "About",
             f"{APP_TITLE} v{VERSION}\nCreated by {AUTHOR}\n\n"
             "Pack into EXE with:\n"
             "pip install pyinstaller\n"
             "pyinstaller --onefile --windowed main.py"
         )
+
+    def _show_usage(self):
+        usage_win = tk.Toplevel(self)
+        usage_win.title("Usage Guide")
+        usage_win.geometry("400x400")
+        txt = ScrolledText(usage_win, wrap='word')
+        txt.pack(fill='both', expand=True, padx=10, pady=10)
+        txt.insert('end', USAGE_TEXT)
+        txt.configure(state='disabled')
 
     def _update_pip(self):
         self._log("Updating pip…")
@@ -214,4 +246,5 @@ class ScaffoldApp(tk.Tk):
             messagebox.showerror("Scaffolding Error", str(e))
 
 if __name__ == '__main__':
-    ScaffoldApp().mainloop()
+    app = ScaffoldApp()
+    app.mainloop()
