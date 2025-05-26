@@ -1,3 +1,5 @@
+import sys
+import subprocess
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from setup_project import scaffold_project
@@ -7,6 +9,23 @@ def choose_dir(entry):
     if d:
         entry.delete(0, tk.END)
         entry.insert(0, d)
+
+def update_pip():
+    try:
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'])
+        messagebox.showinfo("Updated", "pip has been upgraded!")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to update pip:\n{e}")
+
+def update_all():
+    try:
+        out = subprocess.check_output([sys.executable, '-m', 'pip', 'list', '--outdated', '--format=freeze'])
+        pkgs = [line.split(b'==')[0] for line in out.splitlines()]
+        for pkg in pkgs:
+            subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', pkg.decode()])
+        messagebox.showinfo("Done", "All packages upgraded!")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to update packages:\n{e}")
 
 def on_scaffold(name_entry, out_entry, gui_var, git_var, test_var,
                 ci_var, docs_var, pre_var, ec_var, src_var):
@@ -38,7 +57,7 @@ def on_scaffold(name_entry, out_entry, gui_var, git_var, test_var,
 def build_gui():
     app = tk.Tk()
     app.title("Python Project Scaffolder")
-    app.geometry("500x480")
+    app.geometry("500x550")
 
     tk.Label(app, text="Project Name:").pack(anchor="w", padx=10, pady=(10,0))
     name_entry = tk.Entry(app, width=40)
@@ -69,10 +88,10 @@ def build_gui():
     tk.Label(app, text="Options:").pack(anchor="w", padx=10, pady=(10,0))
     for text, var in opts:
         v = tk.IntVar(value=1)
-        cb = tk.Checkbutton(app, text=text, variable=v)
-        cb.pack(anchor="w", padx=20)
+        tk.Checkbutton(app, text=text, variable=v).pack(anchor="w", padx=20)
         vars_map[var] = v
 
+    # Scaffold button
     tk.Button(
         app,
         text="Scaffold!",
@@ -82,14 +101,19 @@ def build_gui():
             vars_map["git_var"], vars_map["test_var"], vars_map["ci_var"],
             vars_map["docs_var"], vars_map["pre_var"], vars_map["ec_var"], vars_map["src_var"],
         )
-    ).pack(pady=20)
+    ).pack(pady=10)
 
+    # Update buttons
+    tk.Button(app, text="Update pip", command=update_pip).pack(pady=5)
+    tk.Button(app, text="Update All Packages", command=update_all).pack(pady=5)
+
+    # Footer credit
     tk.Label(
         app,
         text="Designed by Darrin A. Rapoport",
         font=("Helvetica", 8, "italic"),
         fg="gray"
-    ).pack(side="bottom", pady=5)
+    ).pack(side="bottom", pady=10)
 
     app.mainloop()
 
