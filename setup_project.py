@@ -1,6 +1,7 @@
 import os
 import subprocess
 import textwrap
+import sys
 
 def scaffold_project(
     project_name,
@@ -24,10 +25,17 @@ def scaffold_project(
     base_dir = output_dir or os.getcwd()
     project_dir = os.path.join(base_dir, project_name)
     os.makedirs(project_dir, exist_ok=True)
+    # create a virtual environment automatically
+    venv_dir = os.path.join(project_dir, 'venv')
+    subprocess.check_call([sys.executable, '-m', 'venv', venv_dir])
 
     # 1. Create src/ layout or root package
-    pkg_dir = os.path.join(project_dir, 'src' if use_src else project_name)
+    if use_src:
+        pkg_dir = os.path.join(project_dir, 'src', project_name)
+    else:
+        pkg_dir = os.path.join(project_dir, project_name)
     os.makedirs(pkg_dir, exist_ok=True)
+    open(os.path.join(pkg_dir, '__init__.py'), 'w').close()
     open(os.path.join(pkg_dir, '__init__.py'), 'w').close()
 
     # 2. Generate main.py stub

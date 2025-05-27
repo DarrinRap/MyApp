@@ -293,7 +293,7 @@ class ScaffoldApp(tk.Tk):
         if getattr(sys, 'frozen', False):
             messagebox.showwarning(
                 "Not Supported",
-                
+                "Updating all packages from the standalone executable isn’t supported."
                 "Please run the script with Python instead."
             )
             return
@@ -325,14 +325,13 @@ class ScaffoldApp(tk.Tk):
             self._log(f"Error updating packages: {e}")
 
 
-    
     def _package_executable(self):
         """Bundle a selected Python script into an executable."""
         # Don’t run from the frozen EXE itself
         if getattr(sys, 'frozen', False):
             messagebox.showwarning(
                 "Not Supported",
-                
+                "You must run this script with Python to package an executable."
                 "Bundling from the standalone EXE is not supported."
             )
             return
@@ -396,7 +395,7 @@ class ScaffoldApp(tk.Tk):
             self._log(f"Packaging failed (exit code {proc.returncode}).")
 
 
-
+    
     def _open_in_editor(self):
         if not self.last_path:
             messagebox.showwarning("No Project", "Please scaffold a project first.")
