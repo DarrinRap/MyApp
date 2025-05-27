@@ -3,7 +3,7 @@ import os
 import json
 import subprocess
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog, messagebox, simpledialog
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 from functools import partial
@@ -17,7 +17,7 @@ APP_TITLE = "Python Project Scaffolder"
 VERSION = "2.0"
 AUTHOR = "Darrin A. Rapoport"
 
-# Usage guide text for beginners
+# Usage guide text
 USAGE_TEXT = '''
 Welcome to the Python Project Scaffolder!
 
@@ -51,7 +51,6 @@ Use File → New Project to clear all fields and start over at any time.
 '''
 
 class ScaffoldApp(tk.Tk):
-    """Main GUI for scaffolding and packaging Python desktop apps."""
     def __init__(self):
         super().__init__()
         w, h = self._load_window_size()
@@ -60,20 +59,20 @@ class ScaffoldApp(tk.Tk):
         self.minsize(600, 500)
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
-        # State variables
-        self.last_path = None
-        self.project_name = tk.StringVar(value="MyApp")
-        self.output_folder = tk.StringVar()
-        self.gui_lib = tk.StringVar(value="tkinter")
-        self.license_type = tk.StringVar(value="MIT")
-        flags = ['git', 'tests', 'ci', 'docs', 'precommit', 'editor', 'src']
-        self.options = {flag: tk.BooleanVar(value=True) for flag in flags}
-
-        # Build interface
+        self._init_variables()
         self._create_menu()
         self._create_form()
         self._create_actions()
         self._create_notebook()
+
+    def _init_variables(self):
+        self.project_name = tk.StringVar(value="MyApp")
+        self.output_folder = tk.StringVar()
+        self.gui_lib = tk.StringVar(value="tkinter")
+        self.license_type = tk.StringVar(value="MIT")
+        flags = ['git','tests','ci','docs','precommit','editor','src']
+        self.options = {f: tk.BooleanVar(value=True) for f in flags}
+        self.last_path = None
 
     def _load_window_size(self):
         try:
@@ -112,28 +111,36 @@ class ScaffoldApp(tk.Tk):
         self.config(menu=menubar)
 
     def _create_form(self):
-        ps_frame = ttk.LabelFrame(self, text="Project Settings")
-        ps_frame.pack(fill='x', padx=15, pady=(10, 5))
-        ps_frame.columnconfigure(1, weight=1)
+        frm = ttk.LabelFrame(self, text="Project Settings")
+        frm.pack(fill='x', padx=15, pady=(10,5))
+        frm.columnconfigure(1, weight=1)
 
-        ttk.Label(ps_frame, text="Project Name:").grid(row=0, column=0, sticky='w', pady=2)
-        ttk.Entry(ps_frame, textvariable=self.project_name).grid(row=0, column=1, columnspan=2, sticky='ew', pady=2)
+        ttk.Label(frm, text="Project Name:").grid(row=0,column=0,sticky='w')
+        ttk.Entry(frm, textvariable=self.project_name).grid(row=0,column=1,columnspan=2,sticky='ew')
 
-        ttk.Label(ps_frame, text="Destination Folder:").grid(row=1, column=0, sticky='w', pady=2)
-        ttk.Entry(ps_frame, textvariable=self.output_folder).grid(row=1, column=1, sticky='ew', pady=2)
-        ttk.Button(ps_frame, text="Browse…", command=partial(self._browse_folder, self.output_folder))\
-            .grid(row=1, column=2, padx=5, pady=2)
+        ttk.Label(frm, text="Destination Folder:").grid(row=1,column=0,sticky='w')
+        ttk.Entry(frm, textvariable=self.output_folder).grid(row=1,column=1,sticky='ew')
+        ttk.Button(frm,text="Browse…",command=partial(self._browse_folder,self.output_folder)).grid(row=1,column=2)
 
-        ttk.Label(ps_frame, text="Framework:").grid(row=2, column=0, sticky='w', pady=2)
-        ttk.OptionMenu(ps_frame, self.gui_lib, self.gui_lib.get(), "tkinter", "pyqt5", "pyqt6").grid(row=2, column=1, columnspan=2, sticky='ew', pady=2)
+        ttk.Label(frm, text="Framework:").grid(row=2,column=0,sticky='w')
+        ttk.OptionMenu(frm,self.gui_lib,self.gui_lib.get(),"tkinter","pyqt5","pyqt6").grid(row=2,column=1,columnspan=2,sticky='ew')
 
-        ttk.Label(ps_frame, text="License:").grid(row=3, column=0, sticky='w', pady=2)
-        ttk.OptionMenu(ps_frame, self.license_type, self.license_type.get(), "MIT", "None").grid(row=3, column=1, columnspan=2, sticky='ew', pady=2)
+        ttk.Label(frm, text="License:").grid(row=3,column=0,sticky='w')
+        ttk.OptionMenu(frm,self.license_type,self.license_type.get(),"MIT","None").grid(row=3,column=1,columnspan=2,sticky='ew')
+
+        opts_frame = ttk.LabelFrame(self, text="Options")
+        opts_frame.pack(fill='x', padx=15, pady=(0,10))
+        opts = [("Initialize Git repository",'git'),("Include pytest tests",'tests'),
+                ("Add GitHub Actions CI",'ci'),("Create docs folder",'docs'),
+                ("Add pre-commit config",'precommit'),("Add .editorconfig file",'editor'),
+                ("Use src/ layout",'src')]
+        for i,(text,key) in enumerate(opts):
+            ttk.Checkbutton(opts_frame,text=text,variable=self.options[key]).grid(row=i//2,column=i%2,sticky='w',padx=5,pady=2)
 
     def _create_actions(self):
-        act_frame = ttk.Frame(self)
-        act_frame.pack(fill='x', padx=15)
-        buttons = [
+        frame = ttk.Frame(self)
+        frame.pack(fill='x', padx=15)
+        actions = [
             ("Start Scaffolding", self._run_scaffold),
             ("Update pip", self._update_pip),
             ("Update All Packages", self._update_all),
@@ -142,29 +149,26 @@ class ScaffoldApp(tk.Tk):
             ("Open Terminal", self._open_terminal),
             ("Clear Log", self._clear_log)
         ]
-        for text, cmd in buttons:
-            ttk.Button(act_frame, text=text, command=cmd).pack(side='left', expand=True, fill='x', padx=3, pady=5)
+        for text, cmd in actions:
+            ttk.Button(frame, text=text, command=cmd).pack(side='left', expand=True, fill='x', padx=3, pady=5)
 
     def _create_notebook(self):
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill='both', expand=True, padx=15, pady=5)
-
-        log_frame = ttk.Frame(self.notebook)
-        self.log_pane = ScrolledText(log_frame, state='disabled', wrap='none')
+        log_tab = ttk.Frame(self.notebook)
+        self.log_pane = ScrolledText(log_tab, state='disabled', wrap='none')
         self.log_pane.pack(fill='both', expand=True)
-        self.notebook.add(log_frame, text="Log")
-
-        term_frame = ttk.Frame(self.notebook)
-        self.term_pane = ScrolledText(term_frame, state='disabled', wrap='none')
+        self.notebook.add(log_tab, text="Log")
+        term_tab = ttk.Frame(self.notebook)
+        self.term_pane = ScrolledText(term_tab, state='disabled', wrap='none')
         self.term_pane.pack(fill='both', expand=True)
-        self.notebook.add(term_frame, text="Terminal")
-
-        ttk.Label(self, text=f"© {AUTHOR}", font=(None, 8, 'italic'), foreground='gray').pack(side='bottom', pady=(0, 5))
+        self.notebook.add(term_tab, text="Terminal")
+        ttk.Label(self, text=f"© {AUTHOR}", font=(None, 8, 'italic'), foreground='gray').pack(side='bottom', pady=5)
 
     def _browse_folder(self, var):
-        path = filedialog.askdirectory(title="Select Output Folder")
-        if path:
-            var.set(path)
+        d = filedialog.askdirectory(title="Select Output Folder")
+        if d:
+            var.set(d)
 
     def _clear_form(self):
         self.project_name.set("MyApp")
@@ -175,15 +179,15 @@ class ScaffoldApp(tk.Tk):
             v.set(True)
         self._clear_log()
 
-    def _log(self, message):
+    def _log(self, msg):
         self.log_pane.configure(state='normal')
-        self.log_pane.insert('end', message + '\n')
+        self.log_pane.insert('end', msg + '\n')
         self.log_pane.see('end')
         self.log_pane.configure(state='disabled')
 
-    def _term_log(self, message):
+    def _term_log(self, msg):
         self.term_pane.configure(state='normal')
-        self.term_pane.insert('end', message + '\n')
+        self.term_pane.insert('end', msg + '\n')
         self.term_pane.see('end')
         self.term_pane.configure(state='disabled')
 
@@ -194,8 +198,7 @@ class ScaffoldApp(tk.Tk):
             pane.configure(state='disabled')
 
     def _show_about(self):
-        messagebox.showinfo("About",
-                            f"{APP_TITLE} v{VERSION}\nCreated by {AUTHOR}")
+        messagebox.showinfo("About", f"{APP_TITLE} v{VERSION}\nCreated by {AUTHOR}")
 
     def _show_usage(self):
         win = tk.Toplevel(self)
@@ -212,7 +215,7 @@ class ScaffoldApp(tk.Tk):
         for line in proc.stdout:
             self._term_log(line.rstrip())
         proc.wait()
-        self._log("pip update completed.")
+        self._log("pip update done")
 
     def _update_all(self):
         self._log("Checking outdated packages...")
@@ -220,64 +223,80 @@ class ScaffoldApp(tk.Tk):
         for pkg in json.loads(data):
             name = pkg['name']
             self._log(f"Upgrading {name}...")
-            term = subprocess.Popen([sys.executable, '-m', 'pip', 'install', '--upgrade', name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            for line in term.stdout:
-                self._term_log(line.rstrip())
-            term.wait()
-            self._log(f"{name} upgrade finished.")
+            q = subprocess.Popen([sys.executable, '-m', 'pip', 'install', '--upgrade', name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            for l in q.stdout:
+                self._term_log(l.rstrip())
+            q.wait()
+            self._log(f"{name} upgrade complete")
 
     def _package_executable(self):
-        entry_script = filedialog.askopenfilename(
-            title="Select Python script to bundle",
-            initialdir=self.last_path or os.getcwd(),
-            filetypes=[("Python files", "*.py")]
-        )
-        if not entry_script:
+        exe_name = simpledialog.askstring("Executable Name", "Enter name for the bundled EXE:", initialvalue="Scaffold")
+        if not exe_name:
             return
-        exe_name = os.path.splitext(os.path.basename(entry_script))[0] or "app"
-        self._log(f"Packaging '{exe_name}.exe' from {entry_script}...")
-        inst = subprocess.Popen([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pyinstaller'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        for line in inst.stdout:
+
+        script_path = os.path.abspath(__file__)
+        output_dir = os.path.dirname(script_path)
+        self._log(f"Packaging '{exe_name}.exe' from {script_path}...")
+
+        try:
+            subprocess.run(
+                [sys.executable, '-m', 'pip', 'install', '--upgrade', 'pyinstaller'],
+                check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+            )
+        except subprocess.CalledProcessError as e:
+            self._log(f"Failed to install PyInstaller: {e.output}")
+            messagebox.showerror("PyInstaller Error", e.output)
+            return
+
+        cmd = [
+            sys.executable, '-m', 'PyInstaller',
+            '--onefile', '--windowed',
+            '--name', exe_name,
+            script_path
+        ]
+        proc = subprocess.Popen(
+            cmd,
+            cwd=output_dir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        for line in proc.stdout:
             self._term_log(line.rstrip())
-        inst.wait()
-        cmd = [sys.executable, '-m', 'PyInstaller', '--onefile', '--windowed', '--name', exe_name, entry_script]
-        pkg = subprocess.Popen(cmd, cwd=os.path.dirname(entry_script), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        for line in pkg.stdout:
-            self._term_log(line.rstrip())
-        pkg.wait()
-        self._log(f"Packaging {'succeeded' if pkg.returncode == 0 else 'failed'}.")
+        proc.wait()
+
+        if proc.returncode == 0:
+            dist_exe = os.path.join(output_dir, 'dist', f"{exe_name}.exe")
+            self._log(f"Executable created: {dist_exe}")
+            messagebox.showinfo("Success", f"Executable created:\n{dist_exe}")
+        else:
+            self._log(f"Packaging failed with code {proc.returncode}")
+            messagebox.showerror("Packaging Error", f"Exit code: {proc.returncode}")
 
     def _open_in_editor(self):
         if not self.last_path:
-            messagebox.showwarning("No Project", "Please scaffold a project first.")
+            messagebox.showwarning("No Project", "Scaffold first")
             return
         self._log(f"Opening editor at {self.last_path}")
         try:
             subprocess.Popen(["code", self.last_path])
-        except FileNotFoundError:
-            if sys.platform.startswith("win"):
-                os.startfile(self.last_path)
-            elif sys.platform.startswith("darwin"):
-                subprocess.Popen(["open", self.last_path])
-            else:
-                subprocess.Popen(["xdg-open", self.last_path])
+        except:
+            os.startfile(self.last_path)
 
     def _open_terminal(self):
         if not self.last_path:
-            messagebox.showwarning("No Project", "Please scaffold a project first.")
             return
-        if sys.platform.startswith("win"):
-            subprocess.Popen(["cmd.exe", "/K", f"cd /d {self.last_path}"])
-        elif sys.platform.startswith("darwin"):
-            subprocess.Popen(["open", "-a", "Terminal", self.last_path])
+        if sys.platform.startswith('win'):
+            subprocess.Popen(['cmd.exe','/K',f'cd /d {self.last_path}'])
+        elif sys.platform.startswith('darwin'):
+            subprocess.Popen(['open','-a','Terminal',self.last_path])
         else:
-            subprocess.Popen([os.environ.get("TERMINAL", "x-terminal-emulator"), "--working-directory", self.last_path])
+            subprocess.Popen([os.environ.get('TERMINAL','x-terminal-emulator'),'--working-directory',self.last_path])
 
     def _run_scaffold(self):
         name = self.project_name.get().strip()
         if not name:
-            messagebox.showwarning("Input Required", "Please enter a project name.")
-            return
+            return messagebox.showwarning("Input Required", "Enter project name")
         self._log(f"Scaffolding '{name}'...")
         try:
             path = scaffold_project(
@@ -298,9 +317,8 @@ class ScaffoldApp(tk.Tk):
             self.last_path = path
             self._log(f"Project created at {path}")
         except Exception as e:
-            self._log(f"Error during scaffolding: {e}")
-            messagebox.showerror("Scaffolding Error", str(e))
-
+            self._log(f"Error scaffolding: {e}")
+            messagebox.showerror("Error", str(e))
 
 def main():
     app = ScaffoldApp()
@@ -308,3 +326,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+S
