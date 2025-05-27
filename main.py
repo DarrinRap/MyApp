@@ -64,10 +64,13 @@ class ScaffoldApp(tk.Tk):
         self.last_path = None
         self.project_name = tk.StringVar(value="MyApp")
         self.output_folder = tk.StringVar()
-        self.gui_lib = tk.StringVar(value="tkinter")
+        self.gui_lib = tk.StringVar(value="PyQt6")
         self.license_type = tk.StringVar(value="MIT")
         flags = ['git', 'tests', 'ci', 'docs', 'precommit', 'editor', 'src']
         self.options = {flag: tk.BooleanVar(value=True) for flag in flags}
+
+        # make “Use src/ directory layout” default to OFF
+        self.options['src'].set(False)
 
         # Build interface
         self._create_menu()
@@ -216,6 +219,8 @@ class ScaffoldApp(tk.Tk):
         self.term_pane = ScrolledText(term_frame, state='disabled', wrap='none')
         self.term_pane.pack(fill='both', expand=True)
         self.notebook.add(term_frame, text="Terminal")
+        self.notebook.add(term_frame, text="Terminal")
+        self.notebook.add(term_frame, text="Console Output")
 
         ttk.Label(self, text=f"© {AUTHOR}", font=(None, 8, 'italic'), foreground='gray').pack(side='bottom', pady=(0, 5))
 
