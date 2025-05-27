@@ -5,9 +5,12 @@ import subprocess
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter import ttk
+from tkinter import simpledialog
 from tkinter.scrolledtext import ScrolledText
 from functools import partial
 from setup_project import scaffold_project
+import threading
+
 
 # Configuration file to store window size
 CONFIG_PATH = os.path.expanduser("~/.scaffolder_config.json")
@@ -270,45 +273,129 @@ class ScaffoldApp(tk.Tk):
         txt.configure(state='disabled')
 
     def _update_pip(self):
-        self._log("Updating pip...")
-        proc = subprocess.Popen([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        for line in proc.stdout:
-            self._term_log(line.rstrip())
-        proc.wait()
-        self._log("pip update completed.")
+        if getattr(sys, 'frozen', False):
+            messagebox.showwarning(
+                "Not Supported",
+                "Updating pip from the standalone executable isn’t supported.\n"
+                "Please run the script with Python instead."
+            )
+            return
+
+        # launch the background thread and return immediately
+        threading.Thread(target=self._run_update_pip, daemon=True).start()
+
+        # ────────────────────────────────────────────────────────────
+
+       
 
     def _update_all(self):
-        self._log("Checking outdated packages...")
-        data = subprocess.check_output([sys.executable, '-m', 'pip', 'list', '--outdated', '--format=json'])
-        for pkg in json.loads(data):
-            name = pkg['name']
-            self._log(f"Upgrading {name}...")
-            term = subprocess.Popen([sys.executable, '-m', 'pip', 'install', '--upgrade', name], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            for line in term.stdout:
-                self._term_log(line.rstrip())
-            term.wait()
-            self._log(f"{name} upgrade finished.")
+        """Check for outdated pip packages and upgrade them."""
+        if getattr(sys, 'frozen', False):
+            messagebox.showwarning(
+                "Not Supported",
+                
+                "Please run the script with Python instead."
+            )
+            return
 
+        self._log("Checking for outdated packages…")
+        try:
+            # Get JSON list of outdated packages
+            data = subprocess.check_output(
+                [sys.executable, '-m', 'pip', 'list', '--outdated', '--format=json'],
+                text=True
+            )
+            pkgs = json.loads(data)
+            if not pkgs:
+                self._log("All packages are up-to-date.")
+                return
+
+            for pkg in pkgs:
+                name = pkg['name']
+                self._log(f"Upgrading {name}…")
+                proc = subprocess.Popen(
+                    [sys.executable, '-m', 'pip', 'install', '--upgrade', name],
+                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+                )
+                for line in proc.stdout:
+                    self._term_log(line.rstrip())
+                proc.wait()
+                self._log(f"{name} upgrade finished.")
+        except Exception as e:
+            self._log(f"Error updating packages: {e}")
+
+
+    
     def _package_executable(self):
+        """Bundle a selected Python script into an executable."""
+        # Don’t run from the frozen EXE itself
+        if getattr(sys, 'frozen', False):
+            messagebox.showwarning(
+                "Not Supported",
+                
+                "Bundling from the standalone EXE is not supported."
+            )
+            return
+
+        # 1) Pick the script to bundle
         entry_script = filedialog.askopenfilename(
             title="Select Python script to bundle",
-            initialdir=self.last_path or os.getcwd(),
-            filetypes=[("Python files", "*.py")]
+            initialdir=os.getcwd(),
+            filetypes=[("Python Files", "*.py")]
         )
         if not entry_script:
             return
-        exe_name = os.path.splitext(os.path.basename(entry_script))[0] or "app"
-        self._log(f"Packaging '{exe_name}.exe' from {entry_script}...")
-        inst = subprocess.Popen([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pyinstaller'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        for line in inst.stdout:
+
+        # 2) Ask for your EXE name (no extension)
+        default_name = os.path.splitext(os.path.basename(entry_script))[0] or "app"
+        exe_name = simpledialog.askstring(
+            "Executable Name",
+            "Enter the name for your executable (without .exe):",
+            initialvalue=default_name
+        )
+        if not exe_name:
+            self._log("Packaging cancelled (no name given).")
+            return
+
+        # 3) Ask where to save the EXE
+        dest_folder = filedialog.askdirectory(
+            title="Select destination folder for the executable",
+            initialdir=os.path.dirname(entry_script)
+        )
+        if not dest_folder:
+            dest_folder = os.path.dirname(entry_script)
+
+        self._log(f"Packaging '{exe_name}.exe' from {entry_script} into {dest_folder}…")
+
+        # 4) Make sure PyInstaller is installed
+        try:
+            subprocess.run(
+                [sys.executable, '-m', 'pip', 'install', '--upgrade', 'pyinstaller'],
+                check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
+        except subprocess.CalledProcessError as e:
+            self._log(f"Error installing PyInstaller: {e}")
+            return
+
+        # 5) Run PyInstaller
+        cmd = [
+            sys.executable, '-m', 'PyInstaller',
+            '--onefile', '--windowed',
+            '--name', exe_name,
+            '--distpath', dest_folder,
+            entry_script
+        ]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        for line in proc.stdout:
             self._term_log(line.rstrip())
-        inst.wait()
-        cmd = [sys.executable, '-m', 'PyInstaller', '--onefile', '--windowed', '--name', exe_name, entry_script]
-        pkg = subprocess.Popen(cmd, cwd=os.path.dirname(entry_script), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        for line in pkg.stdout:
-            self._term_log(line.rstrip())
-        pkg.wait()
-        self._log(f"Packaging {'succeeded' if pkg.returncode == 0 else 'failed'}.")
+        proc.wait()
+
+        if proc.returncode == 0:
+            self._log("Packaging succeeded.")
+        else:
+            self._log(f"Packaging failed (exit code {proc.returncode}).")
+
+
 
     def _open_in_editor(self):
         if not self.last_path:
@@ -364,10 +451,61 @@ class ScaffoldApp(tk.Tk):
             self._log(f"Error during scaffolding: {e}")
             messagebox.showerror("Scaffolding Error", str(e))
 
+    def _run_update_pip(self):
+        # runs pip update in a separate thread so the GUI stays responsive
+        self._log("Updating pip...")
+        proc = subprocess.Popen(
+            [sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        for line in proc.stdout:
+            self._log(line.strip())
+        proc.wait()
+        self._log("Pip update complete.")
+
+
+
 
 def main():
     app = ScaffoldApp()
     app.mainloop()
+
+def _run_update_all(self):
+    # runs “pip list” then upgrades each package, logging as it goes
+    self._log("Checking for outdated packages…")
+    proc = subprocess.Popen(
+            [sys.executable, '-m', 'pip', 'list', '--outdated', '--format=freeze'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        # collect all lines first
+    outdated = [line.strip() for line in proc.stdout if line.strip()]
+    proc.wait()
+
+    if not outdated:
+        self._log("All packages are up-to-date.")
+    else:
+        for entry in outdated:
+                # each line is like "package==version"
+                pkg = entry.split("==", 1)[0]
+                self._log(f"Upgrading {pkg}…")
+                inst = subprocess.Popen(
+                    [sys.executable, '-m', 'pip', 'install', '--upgrade', pkg],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True
+                )
+                for out in inst.stdout:
+                    self._log(out.strip())
+                inst.wait()
+                self._log("All packages have been updated.")
+
+
+
+
 
 if __name__ == '__main__':
     main()

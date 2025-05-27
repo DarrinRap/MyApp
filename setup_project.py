@@ -25,16 +25,10 @@ def scaffold_project(
     project_dir = os.path.join(base_dir, project_name)
     os.makedirs(project_dir, exist_ok=True)
 
-    # 1. Create src/ layout or use project root as package
-    if use_src:
-        pkg_dir = os.path.join(project_dir, 'src')
-        os.makedirs(pkg_dir, exist_ok=True)
-    else:
-        pkg_dir = project_dir
-
-    # always create __init__.py so it’s a valid package
+    # 1. Create src/ layout or root package
+    pkg_dir = os.path.join(project_dir, 'src' if use_src else project_name)
+    os.makedirs(pkg_dir, exist_ok=True)
     open(os.path.join(pkg_dir, '__init__.py'), 'w').close()
-
 
     # 2. Generate main.py stub
     main_path = os.path.join(project_dir, 'main.py')
