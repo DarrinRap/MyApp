@@ -23,17 +23,28 @@ def scaffold_project(
     Returns the path to the created project.
     """
     base_dir = output_dir or os.getcwd()
-    project_dir = os.path.join(base_dir, project_name)
+    # Determine project directory, avoiding an extra nested folder when base_dir matches project_name
+    abs_base_dir = os.path.abspath(base_dir)
+    if os.path.basename(abs_base_dir) == project_name:
+        project_dir = base_dir
+    else:
+        project_dir = os.path.join(base_dir, project_name)
     os.makedirs(project_dir, exist_ok=True)
     # create a virtual environment automatically
     # only create a virtual environment when not running as a bundled executable
     if not getattr(sys, 'frozen', False):
         venv_dir = os.path.join(project_dir, 'venv')
         subprocess.check_call([sys.executable, '-m', 'venv', venv_dir])
+    # 1. Create src/ layout or root package
     if use_src:
         pkg_dir = os.path.join(project_dir, 'src', project_name)
+    elif os.path.abspath(project_dir) == os.path.abspath(base_dir):
+        # No extra package folder when project_dir is the same as base_dir
+        pkg_dir = project_dir
     else:
         pkg_dir = os.path.join(project_dir, project_name)
+    os.makedirs(pkg_dir, exist_ok=True)
+    open(os.path.join(pkg_dir, '__init__.py'), 'w').close()
     os.makedirs(pkg_dir, exist_ok=True)
     open(os.path.join(pkg_dir, '__init__.py'), 'w').close()
     open(os.path.join(pkg_dir, '__init__.py'), 'w').close()
