@@ -116,19 +116,77 @@ class ScaffoldApp(tk.Tk):
         ps_frame.pack(fill='x', padx=15, pady=(10, 5))
         ps_frame.columnconfigure(1, weight=1)
 
-        ttk.Label(ps_frame, text="Project Name:").grid(row=0, column=0, sticky='w', pady=2)
-        ttk.Entry(ps_frame, textvariable=self.project_name).grid(row=0, column=1, columnspan=2, sticky='ew', pady=2)
+        # Project name
+        ttk.Label(ps_frame, text="Project Name:") \
+            .grid(row=0, column=0, sticky='w', pady=2)
+        ttk.Entry(ps_frame, textvariable=self.project_name) \
+            .grid(row=0, column=1, columnspan=2, sticky='ew', pady=2)
 
-        ttk.Label(ps_frame, text="Destination Folder:").grid(row=1, column=0, sticky='w', pady=2)
-        ttk.Entry(ps_frame, textvariable=self.output_folder).grid(row=1, column=1, sticky='ew', pady=2)
-        ttk.Button(ps_frame, text="Browse…", command=partial(self._browse_folder, self.output_folder))\
+        # Destination folder
+        ttk.Label(ps_frame, text="Destination Folder:") \
+            .grid(row=1, column=0, sticky='w', pady=2)
+        ttk.Entry(ps_frame, textvariable=self.output_folder) \
+            .grid(row=1, column=1, sticky='ew', pady=2)
+        ttk.Button(ps_frame, text="Browse…",
+                   command=partial(self._browse_folder, self.output_folder)) \
             .grid(row=1, column=2, padx=5, pady=2)
 
-        ttk.Label(ps_frame, text="Framework:").grid(row=2, column=0, sticky='w', pady=2)
-        ttk.OptionMenu(ps_frame, self.gui_lib, self.gui_lib.get(), "tkinter", "pyqt5", "pyqt6").grid(row=2, column=1, columnspan=2, sticky='ew', pady=2)
+        # GUI framework
+        ttk.Label(ps_frame, text="Framework:") \
+            .grid(row=2, column=0, sticky='w', pady=2)
+        ttk.OptionMenu(ps_frame,
+                       self.gui_lib,
+                       self.gui_lib.get(),
+                       "tkinter",
+                       "PyQt6",
+                       "wxPython") \
+            .grid(row=2, column=1, columnspan=2, sticky='ew', pady=2)
 
-        ttk.Label(ps_frame, text="License:").grid(row=3, column=0, sticky='w', pady=2)
-        ttk.OptionMenu(ps_frame, self.license_type, self.license_type.get(), "MIT", "None").grid(row=3, column=1, columnspan=2, sticky='ew', pady=2)
+        # License
+        ttk.Label(ps_frame, text="License:") \
+            .grid(row=3, column=0, sticky='w', pady=2)
+        ttk.OptionMenu(ps_frame,
+                       self.license_type,
+                       self.license_type.get(),
+                       "MIT",
+                       "Apache-2.0",
+                       "GPL-3.0",
+                       "None") \
+            .grid(row=3, column=1, columnspan=2, sticky='ew', pady=2)
+
+        # ── BEGIN “Options for Beginners” ──
+        opts_frame = ttk.LabelFrame(ps_frame, text="Options for Beginners")
+        opts_frame.grid(row=4, column=0, columnspan=3, sticky='ew', pady=(5, 10))
+
+        ttk.Checkbutton(opts_frame,
+                        text="Initialize Git repository",
+                        variable=self.options['git']) \
+            .grid(row=0, column=0, sticky='w')
+        ttk.Checkbutton(opts_frame,
+                        text="Include pytest tests",
+                        variable=self.options['tests']) \
+            .grid(row=0, column=1, sticky='w')
+        ttk.Checkbutton(opts_frame,
+                        text="Add GitHub Actions CI",
+                        variable=self.options['ci']) \
+            .grid(row=1, column=0, sticky='w')
+        ttk.Checkbutton(opts_frame,
+                        text="Create docs folder",
+                        variable=self.options['docs']) \
+            .grid(row=1, column=1, sticky='w')
+        ttk.Checkbutton(opts_frame,
+                        text="Add pre-commit config",
+                        variable=self.options['precommit']) \
+            .grid(row=2, column=0, sticky='w')
+        ttk.Checkbutton(opts_frame,
+                        text="Add .editorconfig file",
+                        variable=self.options['editor']) \
+            .grid(row=2, column=1, sticky='w')
+        ttk.Checkbutton(opts_frame,
+                        text="Use src/ directory layout",
+                        variable=self.options['src']) \
+            .grid(row=3, column=0, sticky='w')
+        # ── END “Options for Beginners” ──
 
     def _create_actions(self):
         act_frame = ttk.Frame(self)
